@@ -26,3 +26,7 @@ jobs:
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
 
+- name: Restart deployment to pick up new HTML
+  run: kubectl rollout restart deployment aks-html-app
+
+
