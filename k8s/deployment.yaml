@@ -1,43 +1,30 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: aks-html-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: aks-html-app
-  template:
-    metadata:
-      labels:
-        app: aks-html-app
-    spec:
-      containers:
-      - name: aks-html-app
-        image: nginx:alpine
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - mountPath: /usr/share/nginx/html
-          name: html-volume
-      volumes:
-      - name: html-volume
-        configMap:
-          name: html-config
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: html-config
-data:
-  index.html: |
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Welcome to AKS</title>
-    </head>
-    <body>
-      <h1 style="color: blue;">Hello from AKS Cluster!</h1>
-    </body>
-    </html>
+name: Deploy to AKS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Connect to AKS
+      run: az aks get-credentials -g maharaja -n maharajaaks
+
+    - name: Update HTML ConfigMap & restart pods
+      run: |
+        kubectl create configmap aks-html-page --from-file=index.html -o yaml --dry-run=client | kubectl apply -f -
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl rollout restart deployment aks-html-app
 
