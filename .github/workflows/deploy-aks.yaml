@@ -21,11 +21,15 @@ jobs:
     - name: Connect to AKS
       run: az aks get-credentials -g maharaja -n maharajaaks
 
-    - name: Deploy HTML page to AKS
+    - name: Update HTML ConfigMap & restart pods
       run: |
+        # 1️⃣ Create or update ConfigMap from index.html
+        kubectl create configmap aks-html-page --from-file=index.html --dry-run=client -o yaml | kubectl apply -f -
+        
+        # 2️⃣ Apply deployment and service (ensures YAML changes are applied)
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
 
-    - name: Restart deployment to pick up new HTML
-      run: kubectl rollout restart deployment aks-html-app
+        # 3️⃣ Restart deployment so pods pick up new HTML
+        kubectl rollout restart deployment aks-html-app
 
